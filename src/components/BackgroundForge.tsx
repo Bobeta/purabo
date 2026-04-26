@@ -15,21 +15,23 @@ export default function BackgroundForge() {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -20 }}
-        className="flex items-center gap-4 bg-zinc-950 border border-zinc-800 p-2 pl-4 pr-3 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden relative group"
+        onClick={() => setMinimized(false)}
+        className="flex items-center gap-4 bg-zinc-950/80 border border-zinc-800 p-2 pl-4 pr-3 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden relative group cursor-pointer hover:border-zinc-700 transition-all backdrop-blur-xl"
       >
+        {/* Progress Glow */}
         <div 
           className="absolute inset-0 opacity-10 transition-opacity group-hover:opacity-20"
           style={{ backgroundColor: forge.themeColor }}
         />
         
-        <div className="flex flex-col">
-          <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Engine</span>
+        <div className="flex flex-col relative z-10">
+          <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Engine Active</span>
           <span className="text-[11px] font-bold text-white truncate max-w-[120px]">
             {forge.status.split(":")[0]}
           </span>
         </div>
 
-        <div className="relative flex items-center justify-center w-10 h-10">
+        <div className="relative flex items-center justify-center w-10 h-10 z-10">
           <svg className="w-full h-full -rotate-90" aria-hidden="true">
             <circle
               cx="20"
@@ -60,13 +62,9 @@ export default function BackgroundForge() {
           </div>
         </div>
 
-        <button 
-          type="button"
-          onClick={() => setMinimized(false)}
-          className="p-2 hover:bg-zinc-900 rounded-xl text-zinc-500 hover:text-white transition-colors"
-        >
+        <div className="p-2 rounded-xl text-zinc-500 group-hover:text-white transition-colors relative z-10">
           <Maximize2 className="w-4 h-4" />
-        </button>
+        </div>
       </motion.div>
     </div>
   );
