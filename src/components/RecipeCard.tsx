@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 
 interface RecipeCardProps {
   name: string;
@@ -43,11 +42,10 @@ export default function RecipeCard({ name, icon, description, themeColor = "#8b5
           )}
         >
           <div className="relative w-14 h-14 transition-transform duration-500 group-hover:scale-110 drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)]">
-            <Image 
+            <img 
               src={icon} 
               alt={name} 
-              fill
-              className="object-contain" 
+              className="w-full h-full object-contain" 
             />
           </div>
         </div>

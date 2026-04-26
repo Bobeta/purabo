@@ -4,8 +4,7 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use tauri::{Emitter, Window};
 
-/// PakeEngine is a ForgeEngine implementation that usesTw93's Pake-CLI.
-/// It wraps any URL into a lightweight native binary using Rust and Tauri's webview.
+/// PakeEngine is a ForgeEngine implementation that uses Tw93's Pake-CLI.
 pub struct PakeEngine;
 
 #[async_trait]
@@ -20,20 +19,26 @@ impl ForgeEngine for PakeEngine {
         url: &str,
         name: &str,
         icon_path: Option<PathBuf>,
-        inject_css_path: Option<PathBuf>,
+        inject_path: Option<PathBuf>,
         output_dir: &PathBuf,
     ) -> Result<PathBuf, String> {
         window.emit("forge-progress", ("ENGINE: Optimizing Build Pipeline...".to_string(), 30)).ok();
 
-        // Use npx --yes to ensure non-interactive execution for senior-grade stability
         let mut cmd = Command::new("npx");
         cmd.args(["--yes", "pake-cli", url, "--name", name]);
 
-        // Dynamically set build targets based on host OS
+        // Platform-specific build targets and hardening
         #[cfg(target_os = "linux")]
-        cmd.args(["--targets", "appimage"]);
+        {
+            cmd.args(["--targets", "appimage"]);
+            // FIX: Modern Linux distros (glibc 2.38+) fail on 'strip'. 
+            // We set NO_STRIP=1 to ensure the AppImage builds correctly.
+            cmd.env("NO_STRIP", "1");
+        }
+        
         #[cfg(target_os = "macos")]
         cmd.args(["--targets", "dmg"]);
+        
         #[cfg(target_os = "windows")]
         cmd.args(["--targets", "nsis"]);
         
@@ -41,13 +46,12 @@ impl ForgeEngine for PakeEngine {
             cmd.arg("--icon").arg(p);
         }
 
-        if let Some(ref p) = inject_css_path {
+        if let Some(ref p) = inject_path {
             cmd.arg("--inject").arg(p);
         }
 
         window.emit("forge-progress", ("ENGINE: Executing Native Compilation...".to_string(), 50)).ok();
 
-        // Inherit IO for production visibility and debugging
         let status = cmd.current_dir(output_dir)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
@@ -59,8 +63,6 @@ impl ForgeEngine for PakeEngine {
         }
 
         let safe_name = name.to_lowercase().replace(' ', "");
-        
-        // Resolve platform-specific binary extension
         let binary_path = if cfg!(target_os = "linux") {
             output_dir.join(format!("{}.AppImage", safe_name))
         } else if cfg!(target_os = "macos") {

@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { Link2, Wand2, Loader2, Moon, Sun, ZapOff, Layout } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 
 interface MagicBarProps {
   onForge: (url: string, name: string, icon?: string, themeColor?: string, forceDark?: boolean, minimalist?: boolean) => void;
@@ -102,9 +101,7 @@ export default function MagicBar({ onForge }: MagicBarProps) {
             {isFetching ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : metadata?.icon_url ? (
-              <div className="relative w-6 h-6">
-                <Image src={metadata.icon_url} fill className="object-contain" alt="icon" />
-              </div>
+              <img src={metadata.icon_url} className="w-6 h-6 object-contain" alt="icon" />
             ) : (
               <Link2 className={cn(
                 "w-5 h-5 transition-transform duration-300",
