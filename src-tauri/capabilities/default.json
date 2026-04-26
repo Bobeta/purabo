@@ -8,14 +8,6 @@
   "permissions": [
     "core:default",
     "shell:default",
-    "allow-check-system",
-    "allow-heal-system",
-    "allow-forge-app",
-    "allow-reveal-in-folder",
-    "allow-launch-app",
-    "allow-fetch-metadata",
-    "allow-delete-app",
-    "allow-get-data-dir",
-    "allow-fetch-recipes"
+    "allow-purabo-commands"
   ]
 }

@@ -1,0 +1,14 @@
+[[permission]]
+identifier = "allow-purabo-commands"
+description = "Enables all internal purabo commands"
+commands.allow = [
+    "check_system",
+    "heal_system",
+    "forge_app",
+    "reveal_in_folder",
+    "launch_app",
+    "fetch_metadata",
+    "delete_app",
+    "get_data_dir",
+    "fetch_recipes"
+]

@@ -4,7 +4,7 @@ use url::Url;
 use serde::{Serialize, Deserialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::fs;
-use tracing::{info, error, warn};
+use tracing::{error, warn};
 use regex::Regex;
 use crate::error::Result;
 use crate::PuraboError;
