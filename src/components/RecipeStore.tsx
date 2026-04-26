@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import RecipeCard from "./RecipeCard";
-import { useAppStore, type Recipe } from "@/store/useAppStore";
+import ConfirmModal from "./ConfirmModal";
+import { useAppStore, type ForgedApp } from "@/store/useAppStore";
 import { Trash2, FolderOpen, RefreshCcw } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { cn } from "@/lib/utils";
 
-const WEB_FALLBACK_RECIPES: Recipe[] = [
+const WEB_FALLBACK_RECIPES = [
   {
     name: "WhatsApp",
     url: "https://web.whatsapp.com",
@@ -35,11 +36,10 @@ interface RecipeStoreProps {
 export default function RecipeStore({ onForge }: RecipeStoreProps) {
   const { forgedApps, removeApp, recipes, setRecipes } = useAppStore();
   const [loading, setLoading] = useState(false);
+  const [appToUninstall, setAppToUninstall] = useState<ForgedApp | null>(null);
 
   const fetchRecipes = async () => {
-    // Detect if we are in a regular browser tab or Tauri
     const isTauri = typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__;
-
     if (!isTauri) {
       setRecipes(WEB_FALLBACK_RECIPES);
       return;
@@ -47,11 +47,9 @@ export default function RecipeStore({ onForge }: RecipeStoreProps) {
 
     setLoading(true);
     try {
-      const remoteRecipes = await invoke<Recipe[]>("fetch_recipes");
+      const remoteRecipes = await invoke<any[]>("fetch_recipes");
       setRecipes(remoteRecipes);
-    } catch (e) {
-      console.error("fetch_recipes_failed", e);
-      // Fallback on error
+    } catch (_e) {
       setRecipes(WEB_FALLBACK_RECIPES);
     } finally {
       setLoading(false);
@@ -67,13 +65,31 @@ export default function RecipeStore({ onForge }: RecipeStoreProps) {
   const revealApps = async () => {
     try {
       await invoke("reveal_in_folder", { path: ".local/share/purabo/apps" });
-    } catch (e) {
-      console.error("reveal_failed", e);
+    } catch (_e) {}
+  };
+
+  const handleUninstall = async () => {
+    if (!appToUninstall) return;
+    try {
+      await invoke("delete_app", { name: appToUninstall.name });
+      removeApp(appToUninstall.id);
+    } catch (_err) {
+      removeApp(appToUninstall.id);
+    } finally {
+      setAppToUninstall(null);
     }
   };
 
   return (
     <div className="w-full max-w-5xl px-4 mt-16 space-y-16 pb-20">
+      <ConfirmModal 
+        isOpen={!!appToUninstall}
+        title={`Uninstall ${appToUninstall?.name}?`}
+        message="This will completely remove the standalone binary, icon, and all local browser data for this app."
+        onConfirm={handleUninstall}
+        onCancel={() => setAppToUninstall(null)}
+      />
+
       {/* My Forge Section */}
       {forgedApps.length > 0 && (
         <section>
@@ -102,16 +118,9 @@ export default function RecipeStore({ onForge }: RecipeStoreProps) {
                 />
                 <button
                   type="button"
-                  onClick={async (e) => {
+                  onClick={(e) => {
                     e.stopPropagation();
-                    if (confirm(`Uninstall ${app.name}?`)) {
-                      try {
-                        await invoke("delete_app", { name: app.name });
-                        removeApp(app.id);
-                      } catch (_err) {
-                        removeApp(app.id);
-                      }
-                    }
+                    setAppToUninstall(app);
                   }}
                   className="absolute top-4 right-4 p-2 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-xl opacity-0 group-hover/app:opacity-100 transition-all duration-200 z-20"
                 >
@@ -148,7 +157,7 @@ export default function RecipeStore({ onForge }: RecipeStoreProps) {
           ))}
           {recipes.length === 0 && !loading && (
             <div className="col-span-full py-12 text-center border-2 border-dashed border-zinc-900 rounded-3xl">
-              <p className="text-zinc-600 font-medium">No recipes loaded. Check your connection.</p>
+              <p className="text-zinc-600 font-medium">No recipes loaded.</p>
               <button 
                 type="button"
                 onClick={fetchRecipes}
