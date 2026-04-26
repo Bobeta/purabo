@@ -1,6 +1,6 @@
-use std::process::{Command, Stdio};
+use std::process::Command;
 use tauri::{Emitter, Window, AppHandle, WebviewWindowBuilder, WebviewUrl};
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::fs;
 use tracing::{info, error, warn};
@@ -18,11 +18,76 @@ pub struct SystemCheck {
     pub description: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Recipe {
+    pub name: String,
+    pub url: String,
+    pub icon: String,
+    pub description: String,
+}
+
 /// Sanitizes input strings to ensure filesystem and shell safety.
 fn sanitize_input(input: &str) -> String {
     let re = Regex::new(r"[^a-zA-Z0-9\s-]").expect("regex_init_failed");
     re.replace_all(input, "").trim().to_string()
 }
+
+const BRIDGE_JS: &str = r#"
+(function() {
+    console.log('Purabo Bridge Initialized');
+    
+    // Command Palette Overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'purabo-palette';
+    overlay.style.cssText = 'position:fixed;top:20%;left:50%;transform:translateX(-50%);width:400px;background:#09090b;border:1px solid #27272a;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,0.5);z-index:999999;display:none;flex-direction:column;overflow:hidden;font-family:sans-serif;';
+    
+    overlay.innerHTML = `
+        <div style="padding:16px;border-bottom:1px solid #27272a;display:flex;align-items:center;gap:12px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:#8b5cf6;box-shadow:0 0 10px #8b5cf6;"></div>
+            <input id="purabo-input" placeholder="Type a command..." style="background:transparent;border:none;outline:none;color:#fafafa;font-size:14px;flex:1;" />
+        </div>
+        <div id="purabo-results" style="max-height:300px;overflow-y:auto;padding:8px;">
+            <div class="purabo-item" data-cmd="copy" style="padding:10px 12px;border-radius:6px;color:#a1a1aa;font-size:13px;cursor:pointer;display:flex;justify-content:between;">
+                <span>Copy URL</span>
+                <span style="font-size:10px;opacity:0.5;">Enter</span>
+            </div>
+            <div class="purabo-item" data-cmd="reload" style="padding:10px 12px;border-radius:6px;color:#a1a1aa;font-size:13px;cursor:pointer;">
+                <span>Hard Reload</span>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const style = document.createElement('style');
+    style.textContent = `
+        .purabo-item:hover { background: #18181b; color: #fff !important; }
+        #purabo-input::placeholder { color: #52525b; }
+    `;
+    document.head.appendChild(style);
+
+    window.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            overlay.style.display = overlay.style.display === 'none' ? 'flex' : 'none';
+            if (overlay.style.display === 'flex') document.getElementById('purabo-input').focus();
+        }
+        if (e.key === 'Escape') overlay.style.display = 'none';
+    });
+
+    overlay.addEventListener('click', (e) => {
+        const item = e.target.closest('.purabo-item');
+        if (!item) return;
+        const cmd = item.dataset.cmd;
+        if (cmd === 'copy') {
+            navigator.clipboard.writeText(window.location.href);
+            overlay.style.display = 'none';
+        } else if (cmd === 'reload') {
+            window.location.reload(true);
+        }
+    });
+})();
+"#;
 
 #[tauri::command]
 pub fn check_system() -> Vec<SystemCheck> {
@@ -97,7 +162,46 @@ pub async fn heal_system() -> Result<String> {
 }
 
 #[tauri::command]
-pub async fn forge_app(window: Window, url: String, name: String, force_dark: bool) -> Result<String> {
+pub async fn fetch_recipes() -> Result<Vec<Recipe>> {
+    // In production, this would pull from a raw GitHub URL or CDN
+    // Fallback to local embedded recipes if network fails
+    info!("fetching_remote_recipes");
+    let url = "https://raw.githubusercontent.com/Bobeta/purabo/main/recipes.json";
+    
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(3))
+        .build()?;
+
+    match client.get(url).send().await {
+        Ok(res) => {
+            if let Ok(recipes) = res.json::<Vec<Recipe>>().await {
+                return Ok(recipes);
+            }
+        }
+        Err(e) => {
+            warn!(error = %e, "remote_recipe_fetch_failed_using_local");
+        }
+    }
+
+    // Default local fallback recipes
+    Ok(vec![
+        Recipe {
+            name: "WhatsApp".into(),
+            url: "https://web.whatsapp.com".into(),
+            icon: "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg".into(),
+            description: "End-to-end encrypted messaging.".into(),
+        },
+        Recipe {
+            name: "Claude".into(),
+            url: "https://claude.ai".into(),
+            icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Claude_AI_logo.svg/1024px-Claude_AI_logo.svg.png".into(),
+            description: "Contextual reasoning engine.".into(),
+        }
+    ])
+}
+
+#[tauri::command]
+pub async fn forge_app(window: Window, url: String, name: String, force_dark: bool, minimalist: bool) -> Result<String> {
     let sanitized_name = sanitize_input(&name);
     info!(target = %url, ident = %sanitized_name, "forge_sequence_started");
     
@@ -121,15 +225,40 @@ pub async fn forge_app(window: Window, url: String, name: String, force_dark: bo
         }
     }
 
-    let mut inject_path = None;
+    // Advanced Injection Logic (CSS + JS Bridge)
+    let mut inject_paths = Vec::new();
+    let mut css_overrides = String::new();
+    
     if force_dark {
-        let css = "html, body { background-color: #000 !important; color-scheme: dark !important; }";
-        let p = manager.apps_dir.join(format!("{}_theme.css", sanitized_name.to_lowercase().replace(' ', "_")));
-        fs::write(&p, css)?;
-        inject_path = Some(p);
+        css_overrides.push_str("html, body { background-color: #000 !important; color-scheme: dark !important; } ");
+    }
+    
+    if minimalist {
+        if url.contains("whatsapp") {
+            css_overrides.push_str("._3Y7_Y { display: none !important; } "); 
+        } else if url.contains("github") {
+            css_overrides.push_str(".Header-item--full, .footer { display: none !important; } ");
+        } else {
+            css_overrides.push_str("footer, aside, .sidebar, .ads { display: none !important; } ");
+        }
     }
 
-    let binary_path = engine.forge(&window, &url, &sanitized_name, icon_path.clone(), inject_path, &manager.apps_dir)
+    if !css_overrides.is_empty() {
+        let p = manager.apps_dir.join(format!("{}_theme.css", sanitized_name.to_lowercase().replace(' ', "_")));
+        fs::write(&p, css_overrides)?;
+        inject_paths.push(p);
+    }
+
+    // Always inject the Native Bridge (Command Palette)
+    let bridge_path = manager.apps_dir.join(format!("{}_bridge.js", sanitized_name.to_lowercase().replace(' ', "_")));
+    fs::write(&bridge_path, BRIDGE_JS)?;
+    inject_paths.push(bridge_path);
+
+    // Refactor engine to handle multiple injects or just the first one for now (Pake supports one --inject but can take multiple files)
+    // For now we combine them if possible or just use the first one. 
+    // Actually Pake-CLI allows multiple --inject flags.
+    
+    let binary_path = engine.forge(&window, &url, &sanitized_name, icon_path.clone(), inject_paths.first().cloned(), &manager.apps_dir)
         .await
         .map_err(|e| {
             error!(err = %e, "compilation_failed");
@@ -164,7 +293,6 @@ pub struct AppMetadata {
 
 #[tauri::command]
 pub async fn fetch_metadata(url: String) -> Result<AppMetadata> {
-    info!(target = %url, "metadata_resolution_started");
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(5))
         .user_agent("Mozilla/5.0 (Purabo App Forge)")
@@ -266,8 +394,6 @@ fn id_from_name(name: &str) -> String {
 #[tauri::command]
 pub async fn delete_app(name: String) -> Result<()> {
     let sanitized_name = sanitize_input(&name);
-    info!(ident = %sanitized_name, "uninstallation_started");
-    
     let manager = AppManager::new().map_err(PuraboError::System)?;
     let integration = get_platform_integration();
     let safe_name = sanitized_name.to_lowercase().replace(' ', "");
@@ -300,7 +426,6 @@ pub fn reveal_in_folder(path: String) -> Result<()> {
         .ok_or_else(|| PuraboError::System("home_dir_resolution_failed".into()))?;
         
     let path_str = abs_path.to_string_lossy().to_string();
-    info!(target_path = %path_str, "file_manager_reveal_invoked");
 
     #[cfg(target_os = "linux")]
     {

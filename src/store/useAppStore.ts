@@ -18,6 +18,13 @@ export interface ForgedApp {
   created_at: number;
 }
 
+export interface Recipe {
+  name: string;
+  url: string;
+  icon: string;
+  description: string;
+}
+
 interface ForgeState {
   isBuilding: boolean;
   isMinimized: boolean;
@@ -28,7 +35,17 @@ interface ForgeState {
 }
 
 interface AppState {
-  // ... rest of interface
+  // System Health
+  checks: SystemCheck[];
+  isHealthy: boolean;
+  isChecking: boolean;
+  setChecks: (checks: SystemCheck[]) => void;
+  setChecking: (isChecking: boolean) => void;
+
+  // Recipes
+  recipes: Recipe[];
+  setRecipes: (recipes: Recipe[]) => void;
+
   // Forged Apps Library
   forgedApps: ForgedApp[];
   addForgedApp: (app: ForgedApp) => void;
@@ -54,6 +71,9 @@ export const useAppStore = create<AppState>()(
         isHealthy: checks.length > 0 && checks.every(c => c.installed) 
       }),
       setChecking: (isChecking) => set({ isChecking }),
+
+      recipes: [],
+      setRecipes: (recipes) => set({ recipes }),
 
       forgedApps: [],
       addForgedApp: (app) => set((state) => ({ 

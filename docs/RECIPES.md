@@ -11,7 +11,7 @@ The **Purabo Recipe Store** is a community-driven repository of optimized config
 
 ### 2. Claude
 - **URL:** `https://claude.ai`
-- **Icon:** Anthropic/Claude Logo
+- **Icon:** Official Logo
 - **Tweak:** Minimalist header injection.
 
 ### 3. Notion

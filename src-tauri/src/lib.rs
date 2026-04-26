@@ -16,7 +16,8 @@ use commands::{
     launch_app, 
     fetch_metadata, 
     delete_app,
-    get_data_dir
+    get_data_dir,
+    fetch_recipes
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -39,7 +40,8 @@ pub fn run() {
             launch_app,
             fetch_metadata,
             delete_app,
-            get_data_dir
+            get_data_dir,
+            fetch_recipes
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

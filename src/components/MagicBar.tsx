@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Link2, Wand2, Loader2, Moon, Sun } from "lucide-react";
+import { Link2, Wand2, Loader2, Moon, Sun, ZapOff, Layout } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
 interface MagicBarProps {
-  onForge: (url: string, name: string, icon?: string, themeColor?: string, forceDark?: boolean) => void;
+  onForge: (url: string, name: string, icon?: string, themeColor?: string, forceDark?: boolean, minimalist?: boolean) => void;
 }
 
 export default function MagicBar({ onForge }: MagicBarProps) {
@@ -15,6 +15,7 @@ export default function MagicBar({ onForge }: MagicBarProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isMinimalist, setIsMinimalist] = useState(true);
   const [metadata, setMetadata] = useState<{ name: string; icon_url?: string; theme_color: string } | null>(null);
   const fetchTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -28,7 +29,7 @@ export default function MagicBar({ onForge }: MagicBarProps) {
           const data = await invoke<{ name: string; icon_url?: string; theme_color: string }>("fetch_metadata", { url });
           setMetadata(data);
         } catch (e) {
-          console.error("Failed to fetch metadata", e);
+          console.error("fetch_failed", e);
         } finally {
           setIsFetching(false);
         }
@@ -42,24 +43,38 @@ export default function MagicBar({ onForge }: MagicBarProps) {
   const handleForge = () => {
     if (!url) return;
     const name = metadata?.name || "Custom App";
-    onForge(url, name, metadata?.icon_url, metadata?.theme_color, isDarkMode);
+    onForge(url, name, metadata?.icon_url, metadata?.theme_color, isDarkMode, isMinimalist);
   };
 
   return (
     <div className="w-full max-w-2xl px-4 relative z-10">
-      <div className="flex justify-end mb-4 px-2">
+      <div className="flex justify-end gap-3 mb-4 px-2">
+        <button 
+          type="button"
+          onClick={() => setIsMinimalist(!isMinimalist)}
+          className={cn(
+            "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+            isMinimalist 
+              ? "bg-emerald-600/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]" 
+              : "bg-zinc-900 text-zinc-500 border border-zinc-800"
+          )}
+        >
+          {isMinimalist ? <Layout className="w-3 h-3" /> : <ZapOff className="w-3 h-3" />}
+          {isMinimalist ? "Minimalist Active" : "Full Interface"}
+        </button>
+
         <button 
           type="button"
           onClick={() => setIsDarkMode(!isDarkMode)}
           className={cn(
-            "flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500",
+            "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300",
             isDarkMode 
               ? "bg-violet-600/10 text-violet-400 border border-violet-500/20 shadow-[0_0_20px_rgba(139,92,246,0.1)]" 
               : "bg-zinc-900 text-zinc-500 border border-zinc-800"
           )}
         >
           {isDarkMode ? <Moon className="w-3 h-3" /> : <Sun className="w-3 h-3" />}
-          {isDarkMode ? "Force Dark Mode" : "Native Theme"}
+          {isDarkMode ? "Dark Theme" : "Native Theme"}
         </button>
       </div>
       
@@ -101,12 +116,12 @@ export default function MagicBar({ onForge }: MagicBarProps) {
           <div className="flex-1 flex flex-col ml-4">
             {metadata && (
               <span className="text-[10px] text-violet-400 font-black uppercase tracking-widest absolute -top-1">
-                Detected: {metadata.name}
+                Resolved: {metadata.name}
               </span>
             )}
             <input
               type="text"
-              placeholder="Paste a URL to forge your native app..."
+              placeholder="Inject URL to optimize..."
               className="bg-transparent border-none outline-none text-zinc-100 placeholder:text-zinc-600 text-lg font-medium selection:bg-violet-500/30 w-full"
               value={url}
               onChange={(e) => setUrl(e.target.value)}

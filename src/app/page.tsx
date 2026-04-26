@@ -14,9 +14,9 @@ export default function Home() {
   const { startForge, failForge, isHealthy, addForgedApp } = useAppStore();
   const [activeAppName, setActiveAppName] = useState("");
 
-  const handleForge = async (url: string, name: string, icon?: string, themeColor?: string, forceDark?: boolean) => {
+  const handleForge = async (url: string, name: string, icon?: string, themeColor?: string, forceDark?: boolean, minimalist?: boolean) => {
     if (!isHealthy) {
-      alert("Please heal your system dependencies before forging an app.");
+      alert("System audit incomplete. Please resolve dependencies.");
       return;
     }
 
@@ -24,7 +24,7 @@ export default function Home() {
     startForge(name, themeColor);
 
     try {
-      await invoke("forge_app", { url, name, forceDark: !!forceDark });
+      await invoke("forge_app", { url, name, forceDark: !!forceDark, minimalist: !!minimalist });
 
       const newApp: ForgedApp = {
         id: Math.random().toString(36).substring(7),
@@ -37,7 +37,7 @@ export default function Home() {
       addForgedApp(newApp);
     } catch (error) {
       failForge(error as string);
-      console.error("Forge failed:", error);
+      console.error("forge_exec_failed", error);
     }
   };
 
@@ -56,13 +56,13 @@ export default function Home() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-400 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-            v1.0.0 "Noble"
+            v1.0.0
           </div>
           <h1 className="text-6xl font-bold tracking-tight mb-4 bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
             Purabo
           </h1>
           <p className="text-zinc-500 text-lg max-w-md mx-auto leading-relaxed">
-            The minimalist app factory. Turn any web experience into a native desktop application.
+            High-performance binary factory. Transform web experiences into standalone desktop tools.
           </p>
         </motion.div>
 
@@ -75,11 +75,11 @@ export default function Home() {
           transition={{ delay: 1 }}
           className="mt-32 text-zinc-600 text-xs flex items-center gap-4"
         >
-          <span>Built on Pake & Tauri</span>
+          <span>Engine v2.1</span>
           <span className="w-1 h-1 rounded-full bg-zinc-800" />
-          <span>Local Compilation</span>
+          <span>Local Context</span>
           <span className="w-1 h-1 rounded-full bg-zinc-800" />
-          <span>Open Source</span>
+          <span>Public Domain</span>
         </motion.footer>
 
         <SystemDoctor />

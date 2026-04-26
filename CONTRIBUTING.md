@@ -13,12 +13,19 @@ Purabo is currently fully functional on **Linux**. We are looking for contributo
 - **Windows:** Further refinement of the `SystemIntegration` trait in `windows.rs`.
 
 ### 2. The Engine Room
-Our build logic is abstracted via the `ForgeEngine` trait. We currently use `Pake`. We'd love to see:
+Our build logic is abstracted via the `ForgeEngine` trait. We'd love to see:
 - Native Rust webview builders.
 - Support for custom Chromium flags.
 - Advanced icon processing.
+- New **Minimalist Injection** presets for popular websites.
 
-### 3. Visual Polish
+### 3. The Native Bridge
+Improve the in-app command palette (`bridge.js`) by adding more native-like features:
+- In-app search.
+- Window management (resize/move).
+- Local notifications.
+
+### 4. Visual Polish
 The "Stealth UI" is built with Tailwind CSS 4 and Motion. Feel free to propose transitions or aesthetic improvements that maintain the high-end feel.
 
 ## 🏗️ Development Setup
@@ -30,7 +37,7 @@ The "Stealth UI" is built with Tailwind CSS 4 and Motion. Feel free to propose t
 
 2. **Clone & Install:**
    ```bash
-   git clone https://github.com/your-username/purabo.git
+   git clone https://github.com/Bobeta/purabo.git
    cd purabo
    pnpm install
    ```
@@ -43,7 +50,7 @@ The "Stealth UI" is built with Tailwind CSS 4 and Motion. Feel free to propose t
 ## 📜 Standards
 - **Idiomatic Rust:** We follow the standard Rust style. Use `cargo fmt` and `cargo clippy`.
 - **Clean Architecture:** Respect the Adapter Pattern. Logic specific to a tool or OS should stay in its respective module.
-- **Documentation:** Public traits and methods should have doc comments.
+- **No AI mentions:** Ensure code comments and UI strings use professional industrial terminology.
 
 ## 🤝 Code of Conduct
 Please be respectful and professional. We are building this for everyone.

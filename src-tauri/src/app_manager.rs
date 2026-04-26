@@ -35,6 +35,7 @@ impl AppManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn get_manifest(&self, name: &str) -> Option<AppManifest> {
         let safe_name = name.to_lowercase().replace(' ', "");
         let manifest_path = self.apps_dir.join(format!("{}.json", safe_name));

@@ -26,9 +26,9 @@ Agnostic system registration via `SystemIntegration` trait.
 
 ## Domain Logic
 
-### App Metadata Scraper
-Automated harvesting of website data using `reqwest` and `scraper`.
-- **Icon Extraction:** Intelligent favicon detection.
+### Asset Resolution Engine
+Automated harvesting of website metadata using standard heuristic parsers.
+- **Icon Extraction:** Intelligent asset detection.
 - **Color Extraction:** Dominant brand color identification for Chameleon UI.
 
 ### System Doctor

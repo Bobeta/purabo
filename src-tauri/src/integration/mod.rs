@@ -13,7 +13,9 @@ pub trait SystemIntegration: Send + Sync {
 }
 
 pub mod linux;
+#[allow(dead_code)]
 pub mod macos;
+#[allow(dead_code)]
 pub mod windows;
 
 /// Returns the appropriate `SystemIntegration` implementation for the current host OS.

@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import RecipeCard from "./RecipeCard";
-import { useAppStore } from "@/store/useAppStore";
-import { Trash2, FolderOpen } from "lucide-react";
+import { useAppStore, type Recipe } from "@/store/useAppStore";
+import { Trash2, FolderOpen, RefreshCcw } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
+import { cn } from "@/lib/utils";
 
-const MOCK_RECIPES = [
+const WEB_FALLBACK_RECIPES: Recipe[] = [
   {
     name: "WhatsApp",
     url: "https://web.whatsapp.com",
@@ -19,28 +21,10 @@ const MOCK_RECIPES = [
     description: "Contextual reasoning engine."
   },
   {
-    name: "Notion",
-    url: "https://notion.so",
-    icon: "https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png",
-    description: "Unified knowledge workspace."
-  },
-  {
-    name: "ChatGPT",
-    url: "https://chatgpt.com",
-    icon: "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
-    description: "Conversational reasoning model."
-  },
-  {
-    name: "Discord",
-    url: "https://discord.com/app",
-    icon: "https://upload.wikimedia.org/wikipedia/commons/7/73/Discord_Color_Text_Logo.svg",
-    description: "Community-first communication."
-  },
-  {
-    name: "Gmail",
-    url: "https://mail.google.com",
-    icon: "https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg",
-    description: "High-performance email management."
+    name: "GitHub",
+    url: "https://github.com",
+    icon: "https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg",
+    description: "Developer collaboration platform."
   }
 ];
 
@@ -49,7 +33,36 @@ interface RecipeStoreProps {
 }
 
 export default function RecipeStore({ onForge }: RecipeStoreProps) {
-  const { forgedApps, removeApp } = useAppStore();
+  const { forgedApps, removeApp, recipes, setRecipes } = useAppStore();
+  const [loading, setLoading] = useState(false);
+
+  const fetchRecipes = async () => {
+    // Detect if we are in a regular browser tab or Tauri
+    const isTauri = typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__;
+
+    if (!isTauri) {
+      setRecipes(WEB_FALLBACK_RECIPES);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const remoteRecipes = await invoke<Recipe[]>("fetch_recipes");
+      setRecipes(remoteRecipes);
+    } catch (e) {
+      console.error("fetch_recipes_failed", e);
+      // Fallback on error
+      setRecipes(WEB_FALLBACK_RECIPES);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (recipes.length === 0) {
+      fetchRecipes();
+    }
+  }, []);
 
   const revealApps = async () => {
     try {
@@ -61,6 +74,7 @@ export default function RecipeStore({ onForge }: RecipeStoreProps) {
 
   return (
     <div className="w-full max-w-5xl px-4 mt-16 space-y-16 pb-20">
+      {/* My Forge Section */}
       {forgedApps.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-8">
@@ -94,7 +108,7 @@ export default function RecipeStore({ onForge }: RecipeStoreProps) {
                       try {
                         await invoke("delete_app", { name: app.name });
                         removeApp(app.id);
-                      } catch (err) {
+                      } catch (_err) {
                         removeApp(app.id);
                       }
                     }
@@ -109,20 +123,46 @@ export default function RecipeStore({ onForge }: RecipeStoreProps) {
         </section>
       )}
 
+      {/* Popular Recipes Section */}
       <section>
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-zinc-500 font-black text-sm tracking-[0.2em] uppercase">Popular Recipes</h2>
           <div className="h-px flex-1 bg-zinc-800 ml-6" />
+          <button 
+            type="button"
+            onClick={fetchRecipes}
+            className="ml-6 p-2 text-zinc-600 hover:text-zinc-400 transition-colors"
+            title="Refresh Recipes"
+          >
+            <RefreshCcw className={cn("w-4 h-4", loading && "animate-spin")} />
+          </button>
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {MOCK_RECIPES.map((recipe) => (
+          {recipes.map((recipe) => (
             <RecipeCard 
               key={recipe.name}
               {...recipe} 
               onClick={() => onForge(recipe.url, recipe.name)}
             />
           ))}
+          {recipes.length === 0 && !loading && (
+            <div className="col-span-full py-12 text-center border-2 border-dashed border-zinc-900 rounded-3xl">
+              <p className="text-zinc-600 font-medium">No recipes loaded. Check your connection.</p>
+              <button 
+                type="button"
+                onClick={fetchRecipes}
+                className="mt-4 text-violet-500 font-bold hover:text-violet-400"
+              >
+                Retry Load
+              </button>
+            </div>
+          )}
+          {loading && recipes.length === 0 && (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-64 bg-zinc-950/40 border border-zinc-900 rounded-[32px] animate-pulse" />
+            ))
+          )}
         </div>
       </section>
     </div>
