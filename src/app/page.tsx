@@ -26,7 +26,7 @@ export default function Home() {
     startForge(name, themeColor);
 
     try {
-      await invoke("forge_app", { url, name, forceDark: !!forceDark, minimalist: !!minimalist });
+      await invoke("forge_app", { url, name, force_dark: !!forceDark, minimalist: !!minimalist });
 
       const newApp: ForgedApp = {
         id: Math.random().toString(36).substring(7),
@@ -45,12 +45,20 @@ export default function Home() {
 
   const appWindow = typeof window !== "undefined" ? getCurrentWindow() : null;
 
+  // Professional manual drag handler
+  const handleDrag = async () => {
+    if (appWindow) {
+      await appWindow.startDragging();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-violet-500/30 overflow-hidden rounded-[32px] border border-zinc-800 shadow-2xl relative flex flex-col">
-      {/* Invisible Drag Region (Highest Layer) */}
+      {/* Native-grade Drag Region */}
       <div 
-        data-tauri-drag-region 
-        className="absolute top-0 left-0 right-0 h-20 z-[90] cursor-grab active:cursor-grabbing"
+        onMouseDown={handleDrag}
+        className="absolute top-0 left-0 right-0 h-24 z-[90] cursor-grab active:cursor-grabbing"
+        aria-hidden="true"
       />
 
       {/* Control Buttons (Above Drag Region) */}
