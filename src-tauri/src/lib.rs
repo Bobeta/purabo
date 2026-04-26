@@ -43,6 +43,10 @@ pub fn run() {
             get_data_dir,
             fetch_recipes
         ])
+        .setup(|app| {
+            // Future: Global setup for window shadowing or media permissions
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
