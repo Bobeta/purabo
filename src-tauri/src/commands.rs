@@ -38,6 +38,11 @@ const MODERN_USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537
 const BRIDGE_JS: &str = r#"
 (function() {
     console.log('Purabo Bridge Initialized');
+    // Force standard native cursor
+    const cursorStyle = document.createElement('style');
+    cursorStyle.textContent = 'html, body, * { cursor: auto !important; } button, a, [role="button"] { cursor: pointer !important; }';
+    document.head.appendChild(cursorStyle);
+
     const overlay = document.createElement('div');
     overlay.id = 'purabo-palette';
     overlay.style.cssText = 'position:fixed;top:20%;left:50%;transform:translateX(-50%);width:400px;background:#09090b;border:1px solid #27272a;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,0.5);z-index:999999;display:none;flex-direction:column;overflow:hidden;font-family:sans-serif;';
@@ -57,12 +62,6 @@ const BRIDGE_JS: &str = r#"
         </div>
     `;
     document.body.appendChild(overlay);
-    const style = document.createElement('style');
-    style.textContent = `
-        .purabo-item:hover { background: #18181b; color: #fff !important; }
-        #purabo-input::placeholder { color: #52525b; }
-    `;
-    document.head.appendChild(style);
     window.addEventListener('keydown', (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
             e.preventDefault();
@@ -71,23 +70,11 @@ const BRIDGE_JS: &str = r#"
         }
         if (e.key === 'Escape') overlay.style.display = 'none';
     });
-    overlay.addEventListener('click', (e) => {
-        const item = e.target.closest('.purabo-item');
-        if (!item) return;
-        const cmd = item.dataset.cmd;
-        if (cmd === 'copy') {
-            navigator.clipboard.writeText(window.location.href);
-            overlay.style.display = 'none';
-        } else if (cmd === 'reload') {
-            window.location.reload(true);
-        }
-    });
 })();
 "#;
 
 #[tauri::command]
 pub fn check_system() -> Vec<SystemCheck> {
-    tracing::info!("system_audit_started");
     let has_pkg = |pkg: &str| {
         Command::new("pkg-config").arg("--exists").arg(pkg).status().map(|s| s.success()).unwrap_or(false)
     };
@@ -104,7 +91,6 @@ pub fn check_system() -> Vec<SystemCheck> {
 
 #[tauri::command]
 pub async fn heal_system() -> Result<String> {
-    tracing::info!("system_healing_initiated");
     let distro = fs::read_to_string("/etc/os-release").map_err(|e| PuraboError::System(format!("os_release_read_failed: {}", e)))?;
     if distro.contains("ID=ubuntu") || distro.contains("ID=debian") {
         let run_privileged = |args: &[&str]| {
@@ -136,7 +122,6 @@ pub async fn fetch_recipes() -> Result<Vec<Recipe>> {
 #[tauri::command]
 pub async fn forge_app(window: Window, url: String, name: String, force_dark: bool, minimalist: bool) -> Result<String> {
     let sanitized_name = sanitize_input(&name);
-    tracing::info!(target = %url, ident = %sanitized_name, "forge_sequence_started");
     let manager = AppManager::new().map_err(PuraboError::System)?;
     let engine = PakeEngine;
     let integration = get_platform_integration();
@@ -158,35 +143,27 @@ pub async fn forge_app(window: Window, url: String, name: String, force_dark: bo
         }
     }
 
-    let mut css_overrides = String::new();
-    if force_dark { css_overrides.push_str("html, body { background-color: #000 !important; color-scheme: dark !important; } "); }
-    if minimalist {
-        if url.contains("whatsapp") { css_overrides.push_str("._3Y7_Y { display: none !important; } "); }
-        else if url.contains("github") { css_overrides.push_str(".Header-item--full, .footer { display: none !important; } "); }
-        else { css_overrides.push_str("footer, aside, .sidebar, .ads { display: none !important; } "); }
-    }
-
     let mut inject_path = None;
-    if !css_overrides.is_empty() {
-        let p = manager.apps_dir.join(format!("{}_theme.css", sanitized_name.to_lowercase().replace(' ', "_")));
-        fs::write(&p, css_overrides)?;
-        inject_path = Some(p);
+    let mut combined_injection = BRIDGE_JS.to_string();
+    
+    if force_dark { combined_injection.push_str(" (function() { const s = document.createElement('style'); s.textContent = 'html, body { background-color: #000 !important; color-scheme: dark !important; }'; document.head.appendChild(s); })();"); }
+    
+    if minimalist {
+        if url.contains("whatsapp") { combined_injection.push_str(" (function() { const s = document.createElement('style'); s.textContent = '._3Y7_Y { display: none !important; }'; document.head.appendChild(s); })();"); }
     }
 
-    let bridge_path = manager.apps_dir.join(format!("{}_bridge.js", sanitized_name.to_lowercase().replace(' ', "_")));
-    fs::write(&bridge_path, BRIDGE_JS)?;
-    let final_inject = inject_path.or(Some(bridge_path));
+    let p = manager.apps_dir.join(format!("{}_bundle.js", sanitized_name.to_lowercase().replace(' ', "_")));
+    fs::write(&p, combined_injection)?;
+    inject_path = Some(p);
 
-    let binary_path = engine.forge(&window, &url, &sanitized_name, icon_path.clone(), final_inject, &manager.apps_dir)
+    let binary_path = engine.forge(&window, &url, &sanitized_name, icon_path.clone(), inject_path, &manager.apps_dir)
         .await
         .map_err(|e| { error!(err = %e, "compilation_failed"); PuraboError::Engine(e) })?;
 
     let manifest = AppManifest { name: sanitized_name.clone(), url: url.clone(), engine: engine.id().to_string(), version: "1.0.0".into(), created_at: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(), icon_path };
     manager.save_manifest(&manifest).map_err(PuraboError::System)?;
 
-    window.emit("forge-progress", ("INTEGRATOR: Finalizing Registration...".to_string(), 90)).ok();
     integration.register(&sanitized_name, &binary_path, manifest.icon_path.as_ref()).map_err(PuraboError::System)?;
-
     window.emit("forge-progress", ("COMPLETED: Application Ready".to_string(), 100)).ok();
     Ok(format!("{} ready", sanitized_name))
 }
@@ -238,7 +215,6 @@ pub async fn fetch_metadata(url: String) -> Result<AppMetadata> {
 #[tauri::command]
 pub async fn launch_app(handle: AppHandle, url: String, name: String) -> Result<()> {
     let sanitized_name = sanitize_input(&name);
-    tracing::info!(ident = %sanitized_name, "launch_invoked");
     let manager = AppManager::new().map_err(PuraboError::System)?;
     let safe_name = sanitized_name.to_lowercase().replace(' ', "");
     #[cfg(target_os = "linux")]
@@ -246,7 +222,7 @@ pub async fn launch_app(handle: AppHandle, url: String, name: String) -> Result<
     #[cfg(not(target_os = "linux"))]
     let binary_path = manager.apps_dir.join(&safe_name);
     if binary_path.exists() {
-        Command::new(&binary_path).spawn().map_err(|e| { error!(err = %e, "process_spawn_failed"); PuraboError::Process(format!("exec_failed: {}", e)) })?;
+        Command::new(&binary_path).spawn().map_err(|e| PuraboError::Process(format!("exec_failed: {}", e)))?;
         return Ok(());
     }
     let target_url = Url::parse(&url).map_err(|e| PuraboError::Metadata(format!("url_parse_failed: {}", e)))?;
@@ -263,13 +239,11 @@ fn id_from_name(name: &str) -> String { name.to_lowercase().replace(' ', "-") }
 #[tauri::command]
 pub async fn delete_app(name: String) -> Result<()> {
     let sanitized_name = sanitize_input(&name);
-    tracing::info!(ident = %sanitized_name, "uninstallation_started");
     let manager = AppManager::new().map_err(PuraboError::System)?;
     let integration = get_platform_integration();
     let safe_name = sanitized_name.to_lowercase().replace(' ', "");
-    
     integration.unregister(&sanitized_name).map_err(PuraboError::System)?;
-
+    
     let app_image = manager.apps_dir.join(format!("{}.AppImage", safe_name));
     if app_image.exists() { fs::remove_file(app_image)?; }
 
@@ -279,12 +253,13 @@ pub async fn delete_app(name: String) -> Result<()> {
     let manifest = manager.apps_dir.join(format!("{}.json", safe_name));
     if manifest.exists() { fs::remove_file(manifest)?; }
 
-    // HARDENING: Wipe WebKit browser data folder for this app to ensure a "Fresh" install next time
+    // DEEP CLEAN: Wipe every trace of WebKit data in all standard Linux locations
     if let Some(config_dir) = dirs::config_dir() {
-        let pake_data = config_dir.join("pake").join("com.pake.desktop").join(&safe_name);
-        if pake_data.exists() {
-            let _ = fs::remove_dir_all(pake_data);
-        }
+        let _ = fs::remove_dir_all(config_dir.join("pake").join("com.pake.desktop").join(&safe_name));
+        let _ = fs::remove_dir_all(config_dir.join("purabo").join("WebView2").join(&safe_name));
+    }
+    if let Some(data_dir) = dirs::data_dir() {
+        let _ = fs::remove_dir_all(data_dir.join("purabo").join("WebKit2GTK").join(&safe_name));
     }
 
     Ok(())
