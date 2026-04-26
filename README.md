@@ -1,28 +1,28 @@
 # Purabo App Factory ⚒️
 
-**Purabo** is a high-performance, professional-grade binary compiler that transforms web experiences into standalone, native desktop applications. Built with a "Stealth UI" aesthetic, it bridges the gap between the web and the OS with unprecedented elegance.
+**Purabo** is a high-performance binary factory that transforms web experiences into standalone, native desktop applications. Engineered for senior developers and minimalist enthusiasts, it provides the OS integration of a Store-app with the extreme efficiency of a system-native binary.
 
 ![License](https://img.shields.io/badge/license-MIT-violet)
 ![Rust](https://img.shields.io/badge/built%20with-Rust-orange)
 ![Tauri](https://img.shields.io/badge/powered%20by-Tauri%202-blue)
 
-## 💡 Why Purabo? (USPs)
+## 💡 Why Purabo? (Unique Selling Points)
 
-In a world of bloated browsers and distracting tabs, Purabo offers a focused, native alternative.
+Purabo is designed to replace both bloated browser tabs and heavy "Official" Store apps (Electron).
 
-- **🚀 Tab Liberation:** Stop losing your most important tools in a sea of 50+ browser tabs. Turn them into separate, alt-tabbable native processes.
-- **🎨 Chameleon UI:** Purabo isn't just a wrapper. It uses heuristic brand-analysis to dynamically theme its own interface and the resulting apps to match the target's identity.
-- **⚡ Zero-Config Native Engine:** No need to manage complex build toolchains. Purabo's internal "System Doctor" audits and heals your environment with one click, then uses a high-performance adapter-based engine to compile binaries locally.
-- **🛡️ Privacy & Performance:** Unlike third-party cloud wrappers, all compilation happens on **your machine**. Resulting apps are lightweight, fast, and completely under your control.
-- **🧪 Advanced Injection:** Automatically strip web clutter (Minimalist Mode) and force professional-grade Dark Themes into any site during the forge process.
-- **⌨️ Native Bridge:** Every Purabo app includes a built-in command palette (`Cmd+K`) for system-level actions, making web apps feel truly native.
+- **🚀 100x Lighter (Electron Killer):** While official store apps (WhatsApp, Discord, Slack) often ship a 100MB+ Chrome instance, Purabo utilizes your system's native webview. The result is a **~2MB binary** that consumes a fraction of the RAM and CPU.
+- **🎨 Chameleon UI:** Purabo uses heuristic brand-analysis to dynamically theme its own interface and the resulting apps to match the target's identity.
+- **🧪 "Zero-Bloat" Minimalist Mode:** Surgically remove web clutter. Injected CSS presets strip sidebars, footers, and ad banners, turning noisy websites into focused, high-end professional tools.
+- **🛡️ Process Isolation & Privacy:** Every forged app runs in its own secure sandbox with isolated storage. All compilation happens **locally** on your machine—no cloud telemetry, no background trackers.
+- **⚡ OS Integration (First-Class Citizen):** Forged apps aren't just bookmarks. They are real binaries with dedicated taskbar entries, system menu shortcuts, and full Alt-Tab support.
+- **⌨️ In-App Native Bridge:** Every app includes a built-in command palette (`Cmd+K`) for system-level actions (Copy URL, Hard Reload, Reset Engine).
+- **🔧 Zero-Config Build Toolchain:** The internal **System Doctor** audits and provisions your environment with one click, automating the complexity of Rust compilation.
 
 ## ✨ Core Experience
 
-- **Universal Resolver:** Intelligent URL ingestion with heuristic asset extraction.
-- **Background Engine:** Minimize the forge and continue your workflow while the binary compiles.
-- **Surgical Cleanup:** A full uninstaller that cleans up binaries, icons, and system menu entries.
-- **Recipe Store:** A curated gallery of optimized templates for world-class tools.
+- **Universal Resolver:** Intelligent URL ingestion with real-time asset discovery.
+- **Background Engine:** Minimize the forge process and continue your workflow while the binary compiles.
+- **Surgical Cleanup:** A built-in uninstaller that removes binaries, icons, manifests, and OS shortcuts.
 
 ## 🏗️ Technical Architecture
 
@@ -37,22 +37,18 @@ Purabo is engineered for longevity and community extensibility:
 ### Prerequisites
 - **Rust** (Stable)
 - **Node.js / pnpm**
-- **Linux:** Environment-specific libraries are managed automatically via the internal Diagnostic tool.
+- **Linux:** System dependencies (WebKit2GTK) are managed automatically via the internal Diagnostic tool.
 
-### Installation
+### Installation & Development
 ```bash
 git clone https://github.com/Bobeta/purabo.git
 cd purabo
 pnpm install
-```
-
-### Development
-```bash
 pnpm tauri dev
 ```
 
 ## 🛠️ Roadmap & Contribution
-Purabo is currently optimized for **Linux**, with robust adapters for **macOS** and **Windows** in active development. We welcome contributions to finalize these platform bridges! See [CONTRIBUTING.md](./CONTRIBUTING.md).
+Purabo is currently optimized for **Linux**, with adapters for **macOS** and **Windows** in active development. We welcome contributions to finalize these platform bridges! See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ---
 Built with ❤️ for the Developer Community.
