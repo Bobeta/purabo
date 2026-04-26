@@ -32,6 +32,9 @@ fn sanitize_input(input: &str) -> String {
     re.replace_all(input, "").trim().to_string()
 }
 
+// A modern Chrome user agent to enable full web feature parity (like WhatsApp calling)
+const MODERN_USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+
 const BRIDGE_JS: &str = r#"
 (function() {
     console.log('Purabo Bridge Initialized');
@@ -112,7 +115,6 @@ pub async fn heal_system() -> Result<String> {
         run_privileged(&["apt-get", "install", "-y", "build-essential", "libgtk-3-dev", "libwebkit2gtk-4.1-dev", "libayatana-appindicator3-dev", "librsvg2-dev", "patchelf", "curl", "pkg-config"])?;
         Ok("provisioning_success".into())
     } else {
-        warn!("unsupported_distro_healing_attempt");
         Err(PuraboError::System("manual_intervention_required".into()))
     }
 }
@@ -248,7 +250,11 @@ pub async fn launch_app(handle: AppHandle, url: String, name: String) -> Result<
         return Ok(());
     }
     let target_url = Url::parse(&url).map_err(|e| PuraboError::Metadata(format!("url_parse_failed: {}", e)))?;
-    WebviewWindowBuilder::new(&handle, format!("preview-{}", id_from_name(&sanitized_name)), WebviewUrl::External(target_url)).title(format!("{} (Preview)", sanitized_name)).inner_size(1200.0, 800.0).build()?;
+    WebviewWindowBuilder::new(&handle, format!("preview-{}", id_from_name(&sanitized_name)), WebviewUrl::External(target_url))
+        .title(format!("{} (Preview)", sanitized_name))
+        .user_agent(MODERN_USER_AGENT)
+        .inner_size(1200.0, 800.0)
+        .build()?;
     Ok(())
 }
 
