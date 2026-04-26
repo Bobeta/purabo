@@ -23,13 +23,15 @@ jobs:
             args: ''
 
     runs-on: ${{ matrix.platform }}
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
 
       - name: setup node
         uses: actions/setup-node@v4
         with:
-          node-version: 22 # Stable LTS for Tauri 2.0
+          node-version: 22
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -62,10 +64,12 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SKIP_SIGNING: true
+          ENABLE_CODE_SIGNING: false
         with:
           tagName: v__VERSION__
           releaseName: "Purabo v__VERSION__"
           releaseBody: "Automated cross-platform release for Purabo App Factory."
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }}
+          args: ${{ matrix.args }} --verbose
