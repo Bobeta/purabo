@@ -7,21 +7,18 @@ import RecipeStore from "@/components/RecipeStore";
 import SystemDoctor from "@/components/SystemDoctor";
 import ForgeModal from "@/components/ForgeModal";
 import BackgroundForge from "@/components/BackgroundForge";
+import ConfirmModal from "@/components/ConfirmModal";
 import { motion } from "motion/react";
 import { X, Minus } from "lucide-react";
 import { useAppStore, type ForgedApp } from "@/store/useAppStore";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 export default function Home() {
-  const { startForge, failForge, isHealthy, addForgedApp } = useAppStore();
+  const { startForge, failForge, isHealthy, addForgedApp, forgedApps } = useAppStore();
   const [activeAppName, setActiveAppName] = useState("");
+  const [duplicateApp, setDuplicateApp] = useState<{ url: string, name: string, icon?: string, themeColor?: string } | null>(null);
 
-  const handleForge = async (url: string, name: string, icon?: string, themeColor?: string) => {
-    if (!isHealthy) {
-      alert("System audit incomplete. Please resolve dependencies.");
-      return;
-    }
-
+  const executeForge = async (url: string, name: string, icon?: string, themeColor?: string) => {
     setActiveAppName(name);
     startForge(name, themeColor);
 
@@ -48,6 +45,35 @@ export default function Home() {
     }
   };
 
+  const handleForge = async (url: string, name: string, icon?: string, themeColor?: string) => {
+    if (!isHealthy) {
+      alert("System audit incomplete. Please resolve dependencies.");
+      return;
+    }
+
+    // Check for existing app with the same name
+    const existing = forgedApps.find(a => a.name.toLowerCase() === name.toLowerCase());
+    if (existing) {
+      setDuplicateApp({ url, name, icon, themeColor });
+      return;
+    }
+
+    executeForge(url, name, icon, themeColor);
+  };
+
+  const handleOverwrite = async () => {
+    if (!duplicateApp) return;
+    
+    // First uninstall the old one properly
+    try {
+      await invoke("delete_app", { name: duplicateApp.name });
+    } catch (e) {}
+
+    const { url, name, icon, themeColor } = duplicateApp;
+    setDuplicateApp(null);
+    executeForge(url, name, icon, themeColor);
+  };
+
   const appWindow = typeof window !== "undefined" ? getCurrentWindow() : null;
 
   const handleDrag = async () => {
@@ -58,6 +84,16 @@ export default function Home() {
 
   return (
     <div className="h-screen bg-background text-foreground selection:bg-violet-500/30 overflow-hidden rounded-[32px] border border-zinc-800 shadow-2xl relative flex flex-col">
+      <ConfirmModal 
+        isOpen={!!duplicateApp}
+        title="App Already Exists"
+        message={`An application named "${duplicateApp?.name}" is already in your library. Overwriting it will clear its current login session and cache.`}
+        confirmText="Overwrite"
+        cancelText="Cancel"
+        onConfirm={handleOverwrite}
+        onCancel={() => setDuplicateApp(null)}
+      />
+
       <div 
         onMouseDown={handleDrag}
         className="absolute top-0 left-0 right-0 h-20 z-[90] cursor-grab active:cursor-grabbing"
