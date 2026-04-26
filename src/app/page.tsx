@@ -26,7 +26,6 @@ export default function Home() {
     startForge(name, themeColor);
 
     try {
-      // Tauri 2.0 bridge expects camelCase for Rust snake_case parameters by default
       await invoke("forge_app", { 
         url, 
         name, 
@@ -58,10 +57,10 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-violet-500/30 overflow-hidden rounded-[32px] border border-zinc-800 shadow-2xl relative flex flex-col">
+    <div className="h-screen bg-background text-foreground selection:bg-violet-500/30 overflow-hidden rounded-[32px] border border-zinc-800 shadow-2xl relative flex flex-col">
       <div 
         onMouseDown={handleDrag}
-        className="absolute top-0 left-0 right-0 h-24 z-[90] cursor-grab active:cursor-grabbing"
+        className="absolute top-0 left-0 right-0 h-20 z-[90] cursor-grab active:cursor-grabbing"
         aria-hidden="true"
       />
 
@@ -87,11 +86,11 @@ export default function Home() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-fuchsia-500/10 blur-[120px] rounded-full" />
       </div>
 
-      <main className="relative flex-1 flex flex-col items-center pt-32 pb-20 px-10 overflow-y-auto z-10 custom-scroll">
+      <main className="relative flex-1 flex flex-col items-center pt-20 pb-12 px-10 overflow-y-auto z-10 custom-scroll">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-16"
+          className="text-center mb-10"
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-400 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
@@ -101,7 +100,7 @@ export default function Home() {
             Purabo
           </h1>
           <p className="text-zinc-500 text-lg max-w-lg mx-auto leading-relaxed font-medium">
-            High-performance binary factory. Transform web experiences into standalone desktop tools.
+            The minimalist app factory.
           </p>
         </motion.div>
 
@@ -112,7 +111,7 @@ export default function Home() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="mt-32 text-zinc-600 text-[10px] flex items-center gap-4 font-black uppercase tracking-[0.2em]"
+          className="mt-20 text-zinc-600 text-[10px] flex items-center gap-4 font-black uppercase tracking-[0.2em]"
         >
           <span>Engine v2.1</span>
           <span className="w-1 h-1 rounded-full bg-zinc-800" />
@@ -134,6 +133,7 @@ export default function Home() {
           background: transparent !important;
           margin: 0;
           padding: 0;
+          height: 100%;
         }
       `}</style>
     </div>

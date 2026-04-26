@@ -267,13 +267,26 @@ pub async fn delete_app(name: String) -> Result<()> {
     let manager = AppManager::new().map_err(PuraboError::System)?;
     let integration = get_platform_integration();
     let safe_name = sanitized_name.to_lowercase().replace(' ', "");
+    
     integration.unregister(&sanitized_name).map_err(PuraboError::System)?;
+
     let app_image = manager.apps_dir.join(format!("{}.AppImage", safe_name));
     if app_image.exists() { fs::remove_file(app_image)?; }
+
     let icon = manager.apps_dir.join(format!("{}.png", sanitized_name.to_lowercase().replace(' ', "_")));
     if icon.exists() { fs::remove_file(icon)?; }
+
     let manifest = manager.apps_dir.join(format!("{}.json", safe_name));
     if manifest.exists() { fs::remove_file(manifest)?; }
+
+    // HARDENING: Wipe WebKit browser data folder for this app to ensure a "Fresh" install next time
+    if let Some(config_dir) = dirs::config_dir() {
+        let pake_data = config_dir.join("pake").join("com.pake.desktop").join(&safe_name);
+        if pake_data.exists() {
+            let _ = fs::remove_dir_all(pake_data);
+        }
+    }
+
     Ok(())
 }
 
