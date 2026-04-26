@@ -1,20 +1,18 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Link2, Wand2, Loader2, Moon, Sun, ZapOff, Layout } from "lucide-react";
+import { Link2, Wand2, Loader2 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { cn } from "@/lib/utils";
 
 interface MagicBarProps {
-  onForge: (url: string, name: string, icon?: string, themeColor?: string, forceDark?: boolean, minimalist?: boolean) => void;
+  onForge: (url: string, name: string, icon?: string, themeColor?: string) => void;
 }
 
 export default function MagicBar({ onForge }: MagicBarProps) {
   const [url, setUrl] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [isMinimalist, setIsMinimalist] = useState(true);
   const [metadata, setMetadata] = useState<{ name: string; icon_url?: string; theme_color: string } | null>(null);
   const fetchTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -42,41 +40,11 @@ export default function MagicBar({ onForge }: MagicBarProps) {
   const handleForge = () => {
     if (!url) return;
     const name = metadata?.name || "Custom App";
-    onForge(url, name, metadata?.icon_url, metadata?.theme_color, isDarkMode, isMinimalist);
+    onForge(url, name, metadata?.icon_url, metadata?.theme_color);
   };
 
   return (
     <div className="w-full max-w-2xl px-4 relative z-10">
-      <div className="flex justify-end gap-3 mb-4 px-2">
-        <button 
-          type="button"
-          onClick={() => setIsMinimalist(!isMinimalist)}
-          className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300",
-            isMinimalist 
-              ? "bg-emerald-600/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]" 
-              : "bg-zinc-900 text-zinc-500 border border-zinc-800"
-          )}
-        >
-          {isMinimalist ? <Layout className="w-3 h-3" /> : <ZapOff className="w-3 h-3" />}
-          {isMinimalist ? "Minimalist Active" : "Full Interface"}
-        </button>
-
-        <button 
-          type="button"
-          onClick={() => setIsDarkMode(!isDarkMode)}
-          className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300",
-            isDarkMode 
-              ? "bg-violet-600/10 text-violet-400 border border-violet-500/20 shadow-[0_0_20px_rgba(139,92,246,0.1)]" 
-              : "bg-zinc-900 text-zinc-500 border border-zinc-800"
-          )}
-        >
-          {isDarkMode ? <Moon className="w-3 h-3" /> : <Sun className="w-3 h-3" />}
-          {isDarkMode ? "Dark Theme" : "Native Theme"}
-        </button>
-      </div>
-      
       <div
         className={cn(
           "relative group transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform",

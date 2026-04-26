@@ -16,7 +16,7 @@ export default function Home() {
   const { startForge, failForge, isHealthy, addForgedApp } = useAppStore();
   const [activeAppName, setActiveAppName] = useState("");
 
-  const handleForge = async (url: string, name: string, icon?: string, themeColor?: string, force_dark?: boolean, minimalist?: boolean) => {
+  const handleForge = async (url: string, name: string, icon?: string, themeColor?: string) => {
     if (!isHealthy) {
       alert("System audit incomplete. Please resolve dependencies.");
       return;
@@ -26,12 +26,12 @@ export default function Home() {
     startForge(name, themeColor);
 
     try {
-      // Use explicit snake_case for both the object key AND the value from parameters
+      // Force minimalist and dark mode off by default for stability in v0.1.0
       await invoke("forge_app", { 
         url, 
         name, 
-        force_dark: !!force_dark, 
-        minimalist: !!minimalist 
+        force_dark: false, 
+        minimalist: false 
       });
 
       const newApp: ForgedApp = {
@@ -95,7 +95,7 @@ export default function Home() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-400 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-            v0.1.0 "Noble"
+            v0.1.0
           </div>
           <h1 className="text-7xl font-bold tracking-tight mb-4 bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
             Purabo
