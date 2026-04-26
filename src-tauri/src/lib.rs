@@ -43,7 +43,7 @@ pub fn run() {
             get_data_dir,
             fetch_recipes
         ])
-        .setup(|app| {
+        .setup(|_app| {
             // Future: Global setup for window shadowing or media permissions
             Ok(())
         })

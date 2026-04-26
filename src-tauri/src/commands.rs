@@ -84,6 +84,7 @@ const BRIDGE_JS: &str = r#"
 
 #[tauri::command]
 pub fn check_system() -> Vec<SystemCheck> {
+    tracing::info!("system_audit_started");
     let has_pkg = |pkg: &str| {
         Command::new("pkg-config").arg("--exists").arg(pkg).status().map(|s| s.success()).unwrap_or(false)
     };
@@ -100,6 +101,7 @@ pub fn check_system() -> Vec<SystemCheck> {
 
 #[tauri::command]
 pub async fn heal_system() -> Result<String> {
+    tracing::info!("system_healing_initiated");
     let distro = fs::read_to_string("/etc/os-release").map_err(|e| PuraboError::System(format!("os_release_read_failed: {}", e)))?;
     if distro.contains("ID=ubuntu") || distro.contains("ID=debian") {
         let run_privileged = |args: &[&str]| {
@@ -110,6 +112,7 @@ pub async fn heal_system() -> Result<String> {
         run_privileged(&["apt-get", "install", "-y", "build-essential", "libgtk-3-dev", "libwebkit2gtk-4.1-dev", "libayatana-appindicator3-dev", "librsvg2-dev", "patchelf", "curl", "pkg-config"])?;
         Ok("provisioning_success".into())
     } else {
+        warn!("unsupported_distro_healing_attempt");
         Err(PuraboError::System("manual_intervention_required".into()))
     }
 }
@@ -131,6 +134,7 @@ pub async fn fetch_recipes() -> Result<Vec<Recipe>> {
 #[tauri::command]
 pub async fn forge_app(window: Window, url: String, name: String, force_dark: bool, minimalist: bool) -> Result<String> {
     let sanitized_name = sanitize_input(&name);
+    tracing::info!(target = %url, ident = %sanitized_name, "forge_sequence_started");
     let manager = AppManager::new().map_err(PuraboError::System)?;
     let engine = PakeEngine;
     let integration = get_platform_integration();
@@ -232,6 +236,7 @@ pub async fn fetch_metadata(url: String) -> Result<AppMetadata> {
 #[tauri::command]
 pub async fn launch_app(handle: AppHandle, url: String, name: String) -> Result<()> {
     let sanitized_name = sanitize_input(&name);
+    tracing::info!(ident = %sanitized_name, "launch_invoked");
     let manager = AppManager::new().map_err(PuraboError::System)?;
     let safe_name = sanitized_name.to_lowercase().replace(' ', "");
     #[cfg(target_os = "linux")]
@@ -252,6 +257,7 @@ fn id_from_name(name: &str) -> String { name.to_lowercase().replace(' ', "-") }
 #[tauri::command]
 pub async fn delete_app(name: String) -> Result<()> {
     let sanitized_name = sanitize_input(&name);
+    tracing::info!(ident = %sanitized_name, "uninstallation_started");
     let manager = AppManager::new().map_err(PuraboError::System)?;
     let integration = get_platform_integration();
     let safe_name = sanitized_name.to_lowercase().replace(' ', "");
