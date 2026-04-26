@@ -16,7 +16,7 @@ export default function Home() {
   const { startForge, failForge, isHealthy, addForgedApp } = useAppStore();
   const [activeAppName, setActiveAppName] = useState("");
 
-  const handleForge = async (url: string, name: string, icon?: string, themeColor?: string, forceDark?: boolean, minimalist?: boolean) => {
+  const handleForge = async (url: string, name: string, icon?: string, themeColor?: string, force_dark?: boolean, minimalist?: boolean) => {
     if (!isHealthy) {
       alert("System audit incomplete. Please resolve dependencies.");
       return;
@@ -26,7 +26,13 @@ export default function Home() {
     startForge(name, themeColor);
 
     try {
-      await invoke("forge_app", { url, name, force_dark: !!forceDark, minimalist: !!minimalist });
+      // Use explicit snake_case for both the object key AND the value from parameters
+      await invoke("forge_app", { 
+        url, 
+        name, 
+        force_dark: !!force_dark, 
+        minimalist: !!minimalist 
+      });
 
       const newApp: ForgedApp = {
         id: Math.random().toString(36).substring(7),
@@ -45,7 +51,6 @@ export default function Home() {
 
   const appWindow = typeof window !== "undefined" ? getCurrentWindow() : null;
 
-  // Professional manual drag handler
   const handleDrag = async () => {
     if (appWindow) {
       await appWindow.startDragging();
@@ -54,14 +59,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-violet-500/30 overflow-hidden rounded-[32px] border border-zinc-800 shadow-2xl relative flex flex-col">
-      {/* Native-grade Drag Region */}
       <div 
         onMouseDown={handleDrag}
         className="absolute top-0 left-0 right-0 h-24 z-[90] cursor-grab active:cursor-grabbing"
         aria-hidden="true"
       />
 
-      {/* Control Buttons (Above Drag Region) */}
       <div className="fixed top-8 right-8 z-[100] flex items-center gap-3">
         <button 
           type="button"
@@ -84,7 +87,6 @@ export default function Home() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-fuchsia-500/10 blur-[120px] rounded-full" />
       </div>
 
-      {/* Main Scrollable Content */}
       <main className="relative flex-1 flex flex-col items-center pt-32 pb-20 px-10 overflow-y-auto z-10 custom-scroll">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
