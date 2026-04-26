@@ -23,8 +23,6 @@ jobs:
             args: ''
 
     runs-on: ${{ matrix.platform }}
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
 
@@ -65,11 +63,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SKIP_SIGNING: true
-          ENABLE_CODE_SIGNING: false
         with:
           tagName: v__VERSION__
           releaseName: "Purabo v__VERSION__"
           releaseBody: "Automated cross-platform release for Purabo App Factory."
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }} --verbose
+          args: ${{ matrix.args }}
