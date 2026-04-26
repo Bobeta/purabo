@@ -28,7 +28,6 @@ pub enum PuraboError {
     Process(String),
 }
 
-// Custom serialization for frontend consumption
 impl Serialize for PuraboError {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
