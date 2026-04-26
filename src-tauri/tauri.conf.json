@@ -19,8 +19,7 @@
         "fullscreen": false,
         "decorations": false,
         "transparent": true,
-        "center": true,
-        "icon": "icons/128x128.png"
+        "center": true
       }
     ],
     "security": {
