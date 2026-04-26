@@ -75,6 +75,7 @@ const BRIDGE_JS: &str = r#"
 
 #[tauri::command]
 pub fn check_system() -> Vec<SystemCheck> {
+    tracing::info!("system_audit_started");
     let has_pkg = |pkg: &str| {
         Command::new("pkg-config").arg("--exists").arg(pkg).status().map(|s| s.success()).unwrap_or(false)
     };
@@ -91,6 +92,7 @@ pub fn check_system() -> Vec<SystemCheck> {
 
 #[tauri::command]
 pub async fn heal_system() -> Result<String> {
+    tracing::info!("system_healing_initiated");
     let distro = fs::read_to_string("/etc/os-release").map_err(|e| PuraboError::System(format!("os_release_read_failed: {}", e)))?;
     if distro.contains("ID=ubuntu") || distro.contains("ID=debian") {
         let run_privileged = |args: &[&str]| {
@@ -143,7 +145,6 @@ pub async fn forge_app(window: Window, url: String, name: String, force_dark: bo
         }
     }
 
-    let mut inject_path = None;
     let mut combined_injection = BRIDGE_JS.to_string();
     
     if force_dark { combined_injection.push_str(" (function() { const s = document.createElement('style'); s.textContent = 'html, body { background-color: #000 !important; color-scheme: dark !important; }'; document.head.appendChild(s); })();"); }
@@ -154,7 +155,7 @@ pub async fn forge_app(window: Window, url: String, name: String, force_dark: bo
 
     let p = manager.apps_dir.join(format!("{}_bundle.js", sanitized_name.to_lowercase().replace(' ', "_")));
     fs::write(&p, combined_injection)?;
-    inject_path = Some(p);
+    let inject_path = Some(p);
 
     let binary_path = engine.forge(&window, &url, &sanitized_name, icon_path.clone(), inject_path, &manager.apps_dir)
         .await
@@ -253,7 +254,6 @@ pub async fn delete_app(name: String) -> Result<()> {
     let manifest = manager.apps_dir.join(format!("{}.json", safe_name));
     if manifest.exists() { fs::remove_file(manifest)?; }
 
-    // DEEP CLEAN: Wipe every trace of WebKit data in all standard Linux locations
     if let Some(config_dir) = dirs::config_dir() {
         let _ = fs::remove_dir_all(config_dir.join("pake").join("com.pake.desktop").join(&safe_name));
         let _ = fs::remove_dir_all(config_dir.join("purabo").join("WebView2").join(&safe_name));
