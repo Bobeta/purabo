@@ -1,5 +1,6 @@
 use std::process::Command;
 use tauri::{Emitter, Window, AppHandle, WebviewWindowBuilder, WebviewUrl};
+use url::Url;
 use serde::{Serialize, Deserialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::fs;
@@ -83,7 +84,6 @@ const BRIDGE_JS: &str = r#"
 
 #[tauri::command]
 pub fn check_system() -> Vec<SystemCheck> {
-    info!("system_audit_started");
     let has_pkg = |pkg: &str| {
         Command::new("pkg-config").arg("--exists").arg(pkg).status().map(|s| s.success()).unwrap_or(false)
     };
@@ -100,7 +100,6 @@ pub fn check_system() -> Vec<SystemCheck> {
 
 #[tauri::command]
 pub async fn heal_system() -> Result<String> {
-    info!("system_healing_initiated");
     let distro = fs::read_to_string("/etc/os-release").map_err(|e| PuraboError::System(format!("os_release_read_failed: {}", e)))?;
     if distro.contains("ID=ubuntu") || distro.contains("ID=debian") {
         let run_privileged = |args: &[&str]| {
@@ -117,7 +116,6 @@ pub async fn heal_system() -> Result<String> {
 
 #[tauri::command]
 pub async fn fetch_recipes() -> Result<Vec<Recipe>> {
-    info!("fetching_remote_recipes");
     let url = "https://raw.githubusercontent.com/Bobeta/purabo/main/recipes.json";
     let client = reqwest::Client::builder().timeout(Duration::from_secs(3)).build()?;
     match client.get(url).send().await {
@@ -133,7 +131,6 @@ pub async fn fetch_recipes() -> Result<Vec<Recipe>> {
 #[tauri::command]
 pub async fn forge_app(window: Window, url: String, name: String, force_dark: bool, minimalist: bool) -> Result<String> {
     let sanitized_name = sanitize_input(&name);
-    info!(target = %url, ident = %sanitized_name, "forge_sequence_started");
     let manager = AppManager::new().map_err(PuraboError::System)?;
     let engine = PakeEngine;
     let integration = get_platform_integration();
@@ -145,8 +142,6 @@ pub async fn forge_app(window: Window, url: String, name: String, force_dark: bo
         let client = reqwest::Client::new();
         if let Ok(res) = client.get(icon_url).send().await {
             if let Ok(bytes) = res.bytes().await {
-                // HARDENING: Favicons can be .ico, .svg, or invalid PNGs.
-                // We MUST use the image crate to decode and re-encode as a valid PNG signature for Pake.
                 if let Ok(img) = image::load_from_memory(&bytes) {
                     let p = manager.apps_dir.join(format!("{}.png", sanitized_name.to_lowercase().replace(' ', "_")));
                     if img.save_with_format(&p, image::ImageFormat::Png).is_ok() {
@@ -172,12 +167,8 @@ pub async fn forge_app(window: Window, url: String, name: String, force_dark: bo
         inject_path = Some(p);
     }
 
-    // Always inject the Native Bridge
     let bridge_path = manager.apps_dir.join(format!("{}_bridge.js", sanitized_name.to_lowercase().replace(' ', "_")));
     fs::write(&bridge_path, BRIDGE_JS)?;
-    
-    // Pake-CLI currently supports one --inject. We'll use the CSS if provided, or the JS bridge.
-    // In a future update, we can concatenate them.
     let final_inject = inject_path.or(Some(bridge_path));
 
     let binary_path = engine.forge(&window, &url, &sanitized_name, icon_path.clone(), final_inject, &manager.apps_dir)
@@ -190,7 +181,6 @@ pub async fn forge_app(window: Window, url: String, name: String, force_dark: bo
     window.emit("forge-progress", ("INTEGRATOR: Finalizing Registration...".to_string(), 90)).ok();
     integration.register(&sanitized_name, &binary_path, manifest.icon_path.as_ref()).map_err(PuraboError::System)?;
 
-    info!(ident = %sanitized_name, "forge_sequence_complete");
     window.emit("forge-progress", ("COMPLETED: Application Ready".to_string(), 100)).ok();
     Ok(format!("{} ready", sanitized_name))
 }
@@ -252,7 +242,8 @@ pub async fn launch_app(handle: AppHandle, url: String, name: String) -> Result<
         Command::new(&binary_path).spawn().map_err(|e| { error!(err = %e, "process_spawn_failed"); PuraboError::Process(format!("exec_failed: {}", e)) })?;
         return Ok(());
     }
-    WebviewWindowBuilder::new(&handle, format!("preview-{}", id_from_name(&sanitized_name)), WebviewUrl::External(url.parse().expect("url_parse_failed"))).title(format!("{} (Preview)", sanitized_name)).inner_size(1200.0, 800.0).build()?;
+    let target_url = Url::parse(&url).map_err(|e| PuraboError::Metadata(format!("url_parse_failed: {}", e)))?;
+    WebviewWindowBuilder::new(&handle, format!("preview-{}", id_from_name(&sanitized_name)), WebviewUrl::External(target_url)).title(format!("{} (Preview)", sanitized_name)).inner_size(1200.0, 800.0).build()?;
     Ok(())
 }
 
