@@ -26,11 +26,11 @@ export default function Home() {
     startForge(name, themeColor);
 
     try {
-      // Force minimalist and dark mode off by default for stability in v0.1.0
+      // Tauri 2.0 bridge expects camelCase for Rust snake_case parameters by default
       await invoke("forge_app", { 
         url, 
         name, 
-        force_dark: false, 
+        forceDark: false, 
         minimalist: false 
       });
 
