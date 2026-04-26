@@ -8,7 +8,9 @@ import SystemDoctor from "@/components/SystemDoctor";
 import ForgeModal from "@/components/ForgeModal";
 import BackgroundForge from "@/components/BackgroundForge";
 import { motion } from "motion/react";
+import { X, Minus } from "lucide-react";
 import { useAppStore, type ForgedApp } from "@/store/useAppStore";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 export default function Home() {
   const { startForge, failForge, isHealthy, addForgedApp } = useAppStore();
@@ -41,27 +43,54 @@ export default function Home() {
     }
   };
 
+  const appWindow = typeof window !== "undefined" ? getCurrentWindow() : null;
+
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-violet-500/30">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+    <div className="min-h-screen bg-background text-foreground selection:bg-violet-500/30 overflow-hidden rounded-[32px] border border-zinc-800 shadow-2xl relative flex flex-col">
+      {/* Invisible Drag Region (Highest Layer) */}
+      <div 
+        data-tauri-drag-region 
+        className="absolute top-0 left-0 right-0 h-20 z-[90] cursor-grab active:cursor-grabbing"
+      />
+
+      {/* Control Buttons (Above Drag Region) */}
+      <div className="fixed top-8 right-8 z-[100] flex items-center gap-3">
+        <button 
+          type="button"
+          onClick={() => appWindow?.minimize()}
+          className="p-2 bg-zinc-900/50 hover:bg-zinc-800 border border-zinc-800/50 rounded-xl text-zinc-500 hover:text-zinc-300 transition-all backdrop-blur-md"
+        >
+          <Minus className="w-4 h-4" />
+        </button>
+        <button 
+          type="button"
+          onClick={() => appWindow?.close()}
+          className="p-2 bg-rose-500/5 hover:bg-rose-500/20 border border-rose-500/10 text-zinc-500 hover:text-rose-400 rounded-xl transition-all backdrop-blur-md"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-violet-500/10 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-fuchsia-500/10 blur-[120px] rounded-full" />
       </div>
 
-      <main className="relative flex flex-col items-center pt-24 pb-20 px-6">
+      {/* Main Scrollable Content */}
+      <main className="relative flex-1 flex flex-col items-center pt-32 pb-20 px-10 overflow-y-auto z-10 custom-scroll">
         <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           className="text-center mb-16"
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-400 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-            v1.0.0
+            v0.1.0 "Noble"
           </div>
-          <h1 className="text-6xl font-bold tracking-tight mb-4 bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
+          <h1 className="text-7xl font-bold tracking-tight mb-4 bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
             Purabo
           </h1>
-          <p className="text-zinc-500 text-lg max-w-md mx-auto leading-relaxed">
+          <p className="text-zinc-500 text-lg max-w-lg mx-auto leading-relaxed font-medium">
             High-performance binary factory. Transform web experiences into standalone desktop tools.
           </p>
         </motion.div>
@@ -72,8 +101,8 @@ export default function Home() {
         <motion.footer 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-          className="mt-32 text-zinc-600 text-xs flex items-center gap-4"
+          transition={{ delay: 0.5 }}
+          className="mt-32 text-zinc-600 text-[10px] flex items-center gap-4 font-black uppercase tracking-[0.2em]"
         >
           <span>Engine v2.1</span>
           <span className="w-1 h-1 rounded-full bg-zinc-800" />
@@ -86,6 +115,17 @@ export default function Home() {
         <BackgroundForge />
         <ForgeModal appName={activeAppName} />
       </main>
+
+      <style jsx global>{`
+        .custom-scroll::-webkit-scrollbar {
+          width: 0px;
+        }
+        body, html {
+          background: transparent !important;
+          margin: 0;
+          padding: 0;
+        }
+      `}</style>
     </div>
   );
 }

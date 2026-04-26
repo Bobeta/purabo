@@ -7,17 +7,19 @@
     "frontendDist": "../out",
     "devUrl": "http://localhost:3001",
     "beforeDevCommand": "pnpm dev --port 3001",
-    "beforeBuildCommand": ""
+    "beforeBuildCommand": "pnpm build"
   },
   "app": {
     "windows": [
       {
         "title": "Purabo",
-        "width": 1000,
-        "height": 800,
+        "width": 1200,
+        "height": 900,
         "resizable": true,
         "fullscreen": false,
-        "decorations": true
+        "decorations": false,
+        "transparent": true,
+        "center": true
       }
     ],
     "security": {
