@@ -45,8 +45,7 @@ export default function ForgeModal({ appName }: ForgeModalProps) {
 
       await invoke("launch_app", { url, name: appName });
       resetForge();
-    } catch (e) {
-      console.error("exec_failed", e);
+    } catch (_e) {
       resetForge();
     }
   };
@@ -58,7 +57,7 @@ export default function ForgeModal({ appName }: ForgeModalProps) {
   const isDone = forge.progress === 100;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md px-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-xl px-4 rounded-[40px] overflow-hidden">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}

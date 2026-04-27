@@ -32,13 +32,11 @@ fn sanitize_input(input: &str) -> String {
     re.replace_all(input, "").trim().to_string()
 }
 
-// A modern Chrome user agent to enable full web feature parity (like WhatsApp calling)
 const MODERN_USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 
 const BRIDGE_JS: &str = r#"
 (function() {
     console.log('Purabo Bridge Initialized');
-    // Force standard native cursor
     const cursorStyle = document.createElement('style');
     cursorStyle.textContent = 'html, body, * { cursor: auto !important; } button, a, [role="button"] { cursor: pointer !important; }';
     document.head.appendChild(cursorStyle);
@@ -75,7 +73,6 @@ const BRIDGE_JS: &str = r#"
 
 #[tauri::command]
 pub fn check_system() -> Vec<SystemCheck> {
-    tracing::info!("system_audit_started");
     let has_pkg = |pkg: &str| {
         Command::new("pkg-config").arg("--exists").arg(pkg).status().map(|s| s.success()).unwrap_or(false)
     };
@@ -92,7 +89,6 @@ pub fn check_system() -> Vec<SystemCheck> {
 
 #[tauri::command]
 pub async fn heal_system() -> Result<String> {
-    tracing::info!("system_healing_initiated");
     let distro = fs::read_to_string("/etc/os-release").map_err(|e| PuraboError::System(format!("os_release_read_failed: {}", e)))?;
     if distro.contains("ID=ubuntu") || distro.contains("ID=debian") {
         let run_privileged = |args: &[&str]| {
@@ -145,6 +141,7 @@ pub async fn forge_app(window: Window, url: String, name: String, force_dark: bo
         }
     }
 
+    let mut inject_path = None;
     let mut combined_injection = BRIDGE_JS.to_string();
     
     if force_dark { combined_injection.push_str(" (function() { const s = document.createElement('style'); s.textContent = 'html, body { background-color: #000 !important; color-scheme: dark !important; }'; document.head.appendChild(s); })();"); }
@@ -155,7 +152,7 @@ pub async fn forge_app(window: Window, url: String, name: String, force_dark: bo
 
     let p = manager.apps_dir.join(format!("{}_bundle.js", sanitized_name.to_lowercase().replace(' ', "_")));
     fs::write(&p, combined_injection)?;
-    let inject_path = Some(p);
+    inject_path = Some(p);
 
     let binary_path = engine.forge(&window, &url, &sanitized_name, icon_path.clone(), inject_path, &manager.apps_dir)
         .await
@@ -254,12 +251,15 @@ pub async fn delete_app(name: String) -> Result<()> {
     let manifest = manager.apps_dir.join(format!("{}.json", safe_name));
     if manifest.exists() { fs::remove_file(manifest)?; }
 
+    // DEEP CLEAN: Purge WebKit session data and Pake's internal config folders
     if let Some(config_dir) = dirs::config_dir() {
         let _ = fs::remove_dir_all(config_dir.join("pake").join("com.pake.desktop").join(&safe_name));
         let _ = fs::remove_dir_all(config_dir.join("purabo").join("WebView2").join(&safe_name));
+        let _ = fs::remove_dir_all(config_dir.join(&safe_name)); // Potential AppImage local config
     }
     if let Some(data_dir) = dirs::data_dir() {
         let _ = fs::remove_dir_all(data_dir.join("purabo").join("WebKit2GTK").join(&safe_name));
+        let _ = fs::remove_dir_all(data_dir.join(&safe_name)); // AppImage data root
     }
 
     Ok(())

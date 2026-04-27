@@ -4,8 +4,9 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use tauri::{Emitter, Window};
 
-/// PakeEngine is a ForgeEngine implementation that uses Tw93's Pake-CLI.
 pub struct PakeEngine;
+
+const MODERN_USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 
 #[async_trait]
 impl ForgeEngine for PakeEngine {
@@ -25,14 +26,11 @@ impl ForgeEngine for PakeEngine {
         window.emit("forge-progress", ("ENGINE: Optimizing Build Pipeline...".to_string(), 30)).ok();
 
         let mut cmd = Command::new("npx");
-        cmd.args(["--yes", "pake-cli", url, "--name", name]);
+        cmd.args(["--yes", "pake-cli", url, "--name", name, "--user-agent", MODERN_USER_AGENT]);
 
-        // Platform-specific build targets and hardening
         #[cfg(target_os = "linux")]
         {
             cmd.args(["--targets", "appimage"]);
-            // FIX: Modern Linux distros (glibc 2.38+) fail on 'strip'. 
-            // We set NO_STRIP=1 to ensure the AppImage builds correctly.
             cmd.env("NO_STRIP", "1");
         }
         

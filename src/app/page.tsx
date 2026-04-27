@@ -21,15 +21,8 @@ export default function Home() {
   const executeForge = async (url: string, name: string, icon?: string, themeColor?: string) => {
     setActiveAppName(name);
     startForge(name, themeColor);
-
     try {
-      await invoke("forge_app", { 
-        url, 
-        name, 
-        forceDark: false, 
-        minimalist: false 
-      });
-
+      await invoke("forge_app", { url, name, forceDark: false, minimalist: false });
       const newApp: ForgedApp = {
         id: Math.random().toString(36).substring(7),
         name,
@@ -41,135 +34,100 @@ export default function Home() {
       addForgedApp(newApp);
     } catch (error) {
       failForge(error as string);
-      console.error("forge_exec_failed", error);
+      console.error("forge_failed", error);
     }
   };
 
   const handleForge = async (url: string, name: string, icon?: string, themeColor?: string) => {
-    if (!isHealthy) {
-      alert("System audit incomplete. Please resolve dependencies.");
-      return;
-    }
-
-    // Check for existing app with the same name
+    if (!isHealthy) return;
     const existing = forgedApps.find(a => a.name.toLowerCase() === name.toLowerCase());
     if (existing) {
       setDuplicateApp({ url, name, icon, themeColor });
       return;
     }
-
-    executeForge(url, name, icon, themeColor);
-  };
-
-  const handleOverwrite = async () => {
-    if (!duplicateApp) return;
-    
-    // First uninstall the old one properly
-    try {
-      await invoke("delete_app", { name: duplicateApp.name });
-    } catch (e) {}
-
-    const { url, name, icon, themeColor } = duplicateApp;
-    setDuplicateApp(null);
     executeForge(url, name, icon, themeColor);
   };
 
   const appWindow = typeof window !== "undefined" ? getCurrentWindow() : null;
 
-  const handleDrag = async () => {
-    if (appWindow) {
-      await appWindow.startDragging();
-    }
-  };
-
   return (
-    <div className="h-screen bg-background text-foreground selection:bg-violet-500/30 overflow-hidden rounded-[32px] border border-zinc-800 shadow-2xl relative flex flex-col">
-      <ConfirmModal 
-        isOpen={!!duplicateApp}
-        title="App Already Exists"
-        message={`An application named "${duplicateApp?.name}" is already in your library. Overwriting it will clear its current login session and cache.`}
-        confirmText="Overwrite"
-        cancelText="Cancel"
-        onConfirm={handleOverwrite}
-        onCancel={() => setDuplicateApp(null)}
-      />
+    <div className="h-screen bg-zinc-950 text-foreground overflow-hidden rounded-[40px] border border-zinc-800/50 shadow-2xl relative flex flex-col">
+      <header className="absolute top-8 left-8 right-8 z-[100] flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-3 bg-zinc-900/80 backdrop-blur-xl px-4 py-2 rounded-full border border-zinc-800/50 pointer-events-auto">
+          <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse shadow-[0_0_8px_#8b5cf6]" />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Purabo Core</span>
+        </div>
 
-      <div 
-        onMouseDown={handleDrag}
-        className="absolute top-0 left-0 right-0 h-20 z-[90] cursor-grab active:cursor-grabbing"
-        aria-hidden="true"
-      />
+        <div className="flex items-center gap-2 pointer-events-auto">
+          <button 
+            type="button"
+            onClick={() => appWindow?.minimize()}
+            className="p-2.5 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800/50 rounded-full text-zinc-500 hover:text-white transition-all backdrop-blur-xl"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+          <button 
+            type="button"
+            onClick={() => appWindow?.close()}
+            className="p-2.5 bg-rose-500/5 hover:bg-rose-500/20 border border-rose-500/10 text-zinc-500 hover:text-rose-400 rounded-full transition-all backdrop-blur-xl"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </header>
 
-      <div className="fixed top-8 right-8 z-[100] flex items-center gap-3">
-        <button 
-          type="button"
-          onClick={() => appWindow?.minimize()}
-          className="p-2 bg-zinc-900/50 hover:bg-zinc-800 border border-zinc-800/50 rounded-xl text-zinc-500 hover:text-zinc-300 transition-all backdrop-blur-md"
-        >
-          <Minus className="w-4 h-4" />
-        </button>
-        <button 
-          type="button"
-          onClick={() => appWindow?.close()}
-          className="p-2 bg-rose-500/5 hover:bg-rose-500/20 border border-rose-500/10 text-zinc-500 hover:text-rose-400 rounded-xl transition-all backdrop-blur-md"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-violet-500/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-fuchsia-500/10 blur-[120px] rounded-full" />
-      </div>
-
-      <main className="relative flex-1 flex flex-col items-center pt-20 pb-12 px-10 overflow-y-auto z-10 custom-scroll">
+      <section className="relative pt-32 pb-12 flex flex-col items-center z-10 shrink-0">
+        <div 
+          role="button"
+          tabIndex={-1}
+          onMouseDown={() => appWindow?.startDragging()}
+          className="absolute inset-0 z-0 cursor-grab active:cursor-grabbing outline-none"
+          aria-label="Drag Window"
+        />
+        
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-10"
+          className="text-center mb-10 pointer-events-none"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-400 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-            v0.1.0
-          </div>
-          <h1 className="text-7xl font-bold tracking-tight mb-4 bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
-            Purabo
-          </h1>
-          <p className="text-zinc-500 text-lg max-w-lg mx-auto leading-relaxed font-medium">
-            The minimalist app factory.
-          </p>
+          <h1 className="text-5xl font-black tracking-tight mb-2 text-white">Purabo</h1>
+          <p className="text-zinc-500 text-sm font-medium tracking-wide">High-performance app factory.</p>
         </motion.div>
 
         <MagicBar onForge={handleForge} />
+      </section>
+
+      <div className="flex-1 min-h-0 overflow-hidden relative flex flex-col">
         <RecipeStore onForge={handleForge} />
+      </div>
 
-        <motion.footer 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-20 text-zinc-600 text-[10px] flex items-center gap-4 font-black uppercase tracking-[0.2em]"
-        >
-          <span>Engine v2.1</span>
-          <span className="w-1 h-1 rounded-full bg-zinc-800" />
-          <span>Local Context</span>
-          <span className="w-1 h-1 rounded-full bg-zinc-800" />
-          <span>Public Domain</span>
-        </motion.footer>
+      <SystemDoctor />
+      <BackgroundForge />
+      <ForgeModal appName={activeAppName} />
 
-        <SystemDoctor />
-        <BackgroundForge />
-        <ForgeModal appName={activeAppName} />
-      </main>
+      <ConfirmModal 
+        isOpen={!!duplicateApp}
+        title="Override App?"
+        message={`"${duplicateApp?.name}" already exists. Re-forging will purge old sessions.`}
+        confirmText="Overwrite"
+        onConfirm={() => {
+          if (duplicateApp) {
+            invoke("delete_app", { name: duplicateApp.name }).ok();
+            executeForge(duplicateApp.url, duplicateApp.name, duplicateApp.icon, duplicateApp.themeColor);
+            setDuplicateApp(null);
+          }
+        }}
+        onCancel={() => setDuplicateApp(null)}
+      />
 
       <style jsx global>{`
-        .custom-scroll::-webkit-scrollbar {
-          width: 0px;
-        }
+        .custom-scroll::-webkit-scrollbar { display: none; }
         body, html {
           background: transparent !important;
           margin: 0;
           padding: 0;
-          height: 100%;
+          height: 100vh;
+          overflow: hidden;
         }
       `}</style>
     </div>

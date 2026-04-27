@@ -7,7 +7,7 @@ mod error;
 
 pub use error::{PuraboError, Result};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
-use tauri::Manager;
+use tauri::{Manager, image::Image};
 
 use commands::{
     check_system, 
@@ -44,13 +44,20 @@ pub fn run() {
             fetch_recipes
         ])
         .setup(|app| {
-            // HARDENING: Force window size and position on launch to bypass stale state
+            // HARDENING: Force window size and set explicit icon for taskbar visibility
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize {
                     width: 1200.0,
                     height: 900.0,
                 }));
                 let _ = window.center();
+                
+                // Manual icon injection from embedded bytes
+                let icon_bytes = include_bytes!("../icons/128x128.png");
+                if let Ok(icon) = Image::from_bytes(icon_bytes) {
+                    let _ = window.set_icon(icon);
+                }
+                
                 let _ = window.set_focus();
             }
             Ok(())

@@ -44,73 +44,65 @@ export default function MagicBar({ onForge }: MagicBarProps) {
   };
 
   return (
-    <div className="w-full max-w-2xl px-4 relative z-10">
+    <div className="w-full max-w-xl mx-auto relative z-20">
       <div
         className={cn(
-          "relative group transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform",
-          isFocused ? "scale-[1.015]" : "scale-100"
+          "relative flex items-center bg-zinc-900/40 border-2 rounded-full px-6 h-16 transition-all duration-500 backdrop-blur-2xl",
+          isFocused 
+            ? "border-violet-500/50 shadow-[0_0_40px_rgba(139,92,246,0.2)] bg-zinc-900/60 scale-[1.02]" 
+            : "border-zinc-800 shadow-2xl scale-100"
         )}
       >
         <div className={cn(
-          "absolute -inset-1 bg-gradient-to-r from-violet-600/10 via-fuchsia-500/10 to-violet-600/10 rounded-[22px] blur-2xl transition-opacity duration-500",
-          isFocused ? "opacity-100" : "opacity-0"
-        )} />
-        
-        <div className={cn(
-          "absolute -inset-[1px] bg-zinc-800 rounded-[21px] transition-colors duration-300",
-          isFocused ? "bg-zinc-700" : "group-hover:bg-zinc-800"
-        )} />
-
-        <div className="relative flex items-center bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden px-6 h-18 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.8)]">
-          <div className={cn(
-            "flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-900 transition-all duration-300 overflow-hidden",
-            isFocused && "bg-zinc-800 text-violet-400"
-          )}>
-            {isFetching ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : metadata?.icon_url ? (
-              <img src={metadata.icon_url} className="w-6 h-6 object-contain" alt="icon" />
-            ) : (
-              <Link2 className={cn(
-                "w-5 h-5 transition-transform duration-300",
-                isFocused ? "rotate-45 scale-110" : "text-zinc-500"
-              )} />
-            )}
-          </div>
-          
-          <div className="flex-1 flex flex-col ml-4">
-            {metadata && (
-              <span className="text-[10px] text-violet-400 font-black uppercase tracking-widest absolute -top-1">
-                Resolved: {metadata.name}
-              </span>
-            )}
-            <input
-              type="text"
-              placeholder="Inject URL to optimize..."
-              className="bg-transparent border-none outline-none text-zinc-100 placeholder:text-zinc-600 text-lg font-medium selection:bg-violet-500/30 w-full"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              onKeyDown={(e) => e.key === 'Enter' && handleForge()}
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={handleForge}
-            disabled={!url || isFetching}
-            className={cn(
-              "ml-4 px-6 h-11 rounded-xl font-bold flex items-center gap-2 transition-all duration-200",
-              url && !isFetching
-                ? "bg-violet-600 text-white opacity-100 translate-x-0 shadow-lg shadow-violet-600/20 active:scale-95" 
-                : "bg-zinc-900 text-zinc-600 opacity-0 translate-x-4 pointer-events-none"
-            )}
-          >
-            <Wand2 className="w-4 h-4" />
-            <span>Forge</span>
-          </button>
+          "flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300",
+          isFocused ? "text-violet-400 rotate-12" : "text-zinc-500"
+        )}>
+          {isFetching ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : metadata?.icon_url ? (
+            <img src={metadata.icon_url} className="w-7 h-7 object-contain rounded-lg" alt="icon" />
+          ) : (
+            <Link2 className="w-5 h-5" />
+          )}
         </div>
+        
+        <div className="flex-1 flex flex-col ml-4">
+          <input
+            type="text"
+            placeholder="Paste URL to forge native app..."
+            className="bg-transparent border-none outline-none text-zinc-100 placeholder:text-zinc-600 text-lg font-medium selection:bg-violet-500/30 w-full"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            onKeyDown={(e) => e.key === 'Enter' && handleForge()}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleForge}
+          disabled={!url || isFetching}
+          className={cn(
+            "ml-2 px-6 h-10 rounded-full font-black text-xs uppercase tracking-widest transition-all duration-300 flex items-center gap-2",
+            url && !isFetching
+              ? "bg-white text-black opacity-100 translate-x-0 shadow-xl hover:bg-zinc-200" 
+              : "bg-zinc-800 text-zinc-600 opacity-0 translate-x-4 pointer-events-none"
+          )}
+        >
+          <Wand2 className="w-3.5 h-3.5" />
+          <span>Forge</span>
+        </button>
+      </div>
+      
+      {/* Resolved indicator floating below */}
+      <div className={cn(
+        "absolute left-1/2 -translate-x-1/2 -bottom-8 transition-all duration-500 pointer-events-none",
+        metadata ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
+      )}>
+        <span className="text-[10px] font-black text-violet-500 uppercase tracking-[0.3em] whitespace-nowrap bg-violet-500/5 px-3 py-1 rounded-full border border-violet-500/10 backdrop-blur-xl">
+          Target: {metadata?.name}
+        </span>
       </div>
     </div>
   );
